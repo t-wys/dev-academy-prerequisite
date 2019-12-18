@@ -1,6 +1,7 @@
 '''Entry point for the script'''
 import argparse
-from polygons import Point, Rectangle, Square, Triangle, Ellipse, Cube, RightPyramid
+from basics import Point
+from geomobjects import (Rectangle, Square, Triangle, Ellipse, Cube, RightPyramid)
 
 
 def main():
