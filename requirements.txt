@@ -1,0 +1,3 @@
+# Required for better accuracy (ellipse circumference calculation)
+# but not neccesary to run the script
+scipy>=1.0.0
