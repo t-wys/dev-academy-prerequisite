@@ -23,7 +23,9 @@ except ImportError:
 
 
 class RegularPolyhedron(Polyhedron):
-    '''
+    '''Polyhedron with regular polygons as bases.
+
+    See docs for `Polyhedron` for a list of methods and attributes.
     '''
     def __init__(self, base, height):
         if not isinstance(base, RegularPolygon) or not base.is_regular:
@@ -32,15 +34,18 @@ class RegularPolyhedron(Polyhedron):
 
     @classmethod
     def from_base_parameters(cls, num_vertices, circumcircle_radius, height):
-        ''''''
+        '''TODO'''
         return cls(RegularPolygon(num_vertices, circumcircle_radius), height)
 
 
 class RightPyramid(RegularPolyhedron):
-    '''
+    '''Polyhedron with single base, which is a regular polygon.
+    Side faces are triangles that meet at the pyramid's apex.
+
+    See docs for `Polyhedron` for a list of methods and attributes.
     '''
     def _calculate_surface_area(self):
-        ''''''
+        '''TODO'''
         return (
             self._base.surface_area
             + 0.5 * self._base.perimeter * sqrt(
@@ -48,7 +53,7 @@ class RightPyramid(RegularPolyhedron):
             ))
 
     def _calculate_volume(self):
-        ''''''
+        '''TODO'''
         return super()._calculate_volume() / 3
 
 
@@ -99,16 +104,29 @@ class Square(Rectangle):
 
 
 class RegularPolygon(Polygon):
-    '''
-    define by number of vertices (n) and one of:
-        * edge length (a)
-        * radius of inscribed circle (r)
-        * radius of circumcircle (R)
+    '''Polygon with all edges and angles equal
 
-        S = 0.5 * n * a * r
-        P = n * a
+    See docs for `Polygon` for a list of methods and attributes.
     '''
     def __init__(self, num_vertices, circumcircle_radius):
+        '''Creates new regular polygon.
+
+        Parameters
+        ----------
+        num_vertices : int
+            Number of vertices in the resulting polygon
+        circumcircle_radius : number
+            Radius of the circle on which circumference vertices lie
+
+        Raises
+        ------
+        TypeError
+            If num_vertices is not an integer
+        ValueError
+            If circumcircle_radius is <= 0
+        '''
+        if not isinstance(num_vertices, int):
+            raise TypeError('Number of vertices needs to be of type "int"')
         if circumcircle_radius <= 0:
             raise ValueError('Circumcircle radius have to be greater than zero')
         self._circumcircle_radius = circumcircle_radius
@@ -127,16 +145,33 @@ class RegularPolygon(Polygon):
 
     @property
     def circumcircle_radius(self):
+        '''Radius of circle which contains '''
         return self._circumcircle_radius
 
     @property
     def inscribed_radius(self):
+        '''Radius of circle fully contained within the polygon'''
         return self._inscribed_radius
 
 
 class Triangle(Polygon):
-    ''''''
+    '''Three-segment polygon
+    
+    See docs for `Polygon` for a list of methods and attributes.
+    '''
     def __init__(self, p0, p1, p2):
+        '''Creates new triangle
+
+        Parameters
+        ----------
+        p0, p1, p2 : Point
+            Instances of basics.Point
+
+        Raises
+        ------
+        ValueError
+            If points passed to constructor do not satisfy triangle inequality
+        '''
         edges = [
             Segment(p0, p1),
             Segment(p1, p2),
@@ -152,7 +187,7 @@ class Triangle(Polygon):
 
 
 class Cube(Polyhedron):
-    ''''''
+    '''Just a cube'''
     def __init__(self, a):
         '''Create cube with edge length equal to `a`
 
@@ -168,7 +203,9 @@ class Cube(Polyhedron):
 
 
 class Ellipse(PlaneCurve):
-    '''Ellipse
+    '''Ellipse, 2D plane curve with equation given by:
+
+    .. math::\frac{x^2}{a^2} + \frac{y^2}{b^2} = 1
     '''
     def __init__(self, major, minor):
         '''Create new ellipe with given major and minor semi-axes.
@@ -179,6 +216,11 @@ class Ellipse(PlaneCurve):
             Major semi-axis
         b : number
             Minor semi-axis
+
+        Raises
+        ------
+        TypeError
+            If at least on parameter is not a numbers
         '''
         if not all(isinstance(axis, numbers.Number) for axis in (major, minor)):
             raise TypeError('Major or minor semi-axis is not a number')
@@ -196,40 +238,46 @@ class Ellipse(PlaneCurve):
         self._perimeter = perimeter_func()
 
     def __repr__(self):
-        return f'Ellipse {self._major}, {self._minor}'
+        return f'Ellipse major {self._major}, minor {self._minor}'
 
     def _calculate_surface_area(self):
+        '''Uses standard formula: pi*(major)*(minor)'''
         return pi*self._major*self._minor
 
     def _approximate_perimeter(self):
-        '''The formula taken form
+        '''Used only is SciPy is not available.
+
+        The formula taken form
         https://www.johndcook.com/blog/2013/05/05/ramanujan-circumference-ellipse/
         '''
         t = ((self._major - self._minor)/(self._major + self._minor))**2
         return pi*(self._major + self._minor)*(1 + 3*t/(10 + sqrt(4 - 3*t)))
 
     def _calculate_perimeter(self):
+        '''Uses elliptic integral of second kind provided by SciPy'''
         return 4*self._major*ellipe(self._eccentricity**2)
 
     @property
     def eccentricity(self):
-        ''''''
+        '''Given by sqrt(1 - (minor/major)**2)'''
         return self._eccentricity
 
     @property
     def semi_major_axis(self):
-        ''''''
+        '''Access value for semi-major axis'''
         return self._major
 
     @property
     def semi_minor_axis(self):
-        ''''''
+        '''Access value for semi-minor axis'''
         return self._minor
 
     @property
     def perimeter(self):
+        '''Access perimeter (or circumference) of the ellipse'''
         return self._perimeter
 
     @property
     def surface_area(self):
+        '''Access surface area of the ellipse'''
         return self._surface_area

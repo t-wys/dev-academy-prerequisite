@@ -17,13 +17,41 @@ try:
     from math import isclose
 except ImportError:
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        '''Check whether two float numbers are close.
+        Taken from PEP 485.
+
+        Parameters
+        ----------
+        a, b : float
+            Numbers to be compared
+        rel_tol, abs_tol : float, optional
+            Relative and absolute tolerance
+
+        Returns
+        -------
+        bool
+            True if numbers are close
+        '''
         return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
 class Point(object):
-    '''
-    '''
+    '''Basic 0D object, building block of everything else.'''
     def __init__(self, x, y, z=0):
+        '''Creates new point from at least two numbers.
+
+        Parameters
+        ----------
+        x, y : number
+            At least X and Y coordinates are mandatory
+        z : number, optional
+            Z coordinate is optional, by default = 0
+
+        Raises
+        ------
+        TypeError
+            If any of coordinates is not a number
+        '''
         if not all(isinstance(coord, numbers.Number) for coord in (x, y, z)):
             raise TypeError('X, Y, or Z is not a number')
         self._coords = (x, y, z)
@@ -100,7 +128,36 @@ class Point(object):
 
 
 class Vector(object):
+    '''Representation of 3D vector
+
+    Attributes
+    ----------
+    components : tuple
+        Collection of X, Y, Z components
+    x, y, z : number
+        Components along X, Y and Z axes
+    length : float
+        sqrt(sum(i**2)) for i in (x, y, z)
+
+    Methods
+    -------
+    from_points
+        Creates new vector from start point (anchor) and end point.
+    dot
+        Calculates scalar product.
+    cross
+        Calculates cross product.
+    '''
     def __init__(self, x, y, z=0):
+        '''Creates new vector and calculates its basic properties
+
+        Parameters
+        ----------
+        x, y : number
+            X and Y components are mandatory
+        z : number
+            Z component is optional
+        '''
         self._components = (x, y, z)
         self._length = sqrt(sum(c**2 for c in self._components))
 
@@ -114,6 +171,10 @@ class Vector(object):
         start_point, end_point : Point
             starting point p and ending point p+r where r is a vector
             that will be returned by this method
+
+        Returns
+        -------
+        Vector
         '''
         return cls(*(e - s for s, e in zip(start_point, end_point)))
 
@@ -145,6 +206,7 @@ class Vector(object):
 
     @property
     def length(self):
+        '''Length of a vector'''
         return self._length
 
     def dot(self, vector):
@@ -199,8 +261,31 @@ class Vector(object):
 
 
 class Segment(object):
-    '''Representation of a line segment.'''
+    '''Representation of a line segment.
+
+    Attributes
+    ----------
+    start_point, end_point : Point
+        Segment spans between these two point 
+    length : float
+        Length ot segment
+    xy_projection_length : float
+        Length of segment's projection onto XY plane
+
+    Methods
+    -------
+    intersects_with
+        Performs vector-based intersection check with other segment
+    '''
     def __init__(self, p0, p1):
+        '''Creates new segment given two points. Also calculates
+        basic properties.
+
+        Parameters
+        ----------
+        p0, p1 : Point
+            TODO
+        '''
         self._p0 = p0
         self._p1 = p1
         self._length = self._p0.distance_to(self._p1)
@@ -315,12 +400,20 @@ class Polygon(object):
         List of points on which span the polygon
     edges : list of `Segment`s
         List of line segments that span on pairs of consecutive vertices
+    angles : list of floats
+        List of angles between to neighbouring segments. Expressed in radians.
     '''
     def __init__(self, vertices):
-        '''
+        '''Creates new polygon
+
         Parameters
         ----------
         vertices : list of `Point`s
+
+        Raises
+        ------
+        ValueError
+            If number of vertices if smaller than 3
         '''
         if len(vertices) < 3:
             raise ValueError('Passed %s vertices. Expecting at least 3' % len(vertices))
@@ -361,7 +454,13 @@ class Polygon(object):
         return f'Polygon {len(self._vertices)}-vertices'
 
     def _validate_polygon(self):
-        ''''''
+        '''Checks whether segments defined by vertices do not intersect.
+
+        Raises
+        ------
+        Exception
+            If an intersection is detected
+        '''
         for i, edge_1 in enumerate(self._edges[:-1]):
             for edge_2 in self._edges[(i+1):]:
                 if edge_1.intersects_with(edge_2):
@@ -373,11 +472,25 @@ class Polygon(object):
         return True
 
     def _calculate_perimeter(self):
+        '''Perimeter -- sum of lengths of segments.
+
+        Returns
+        -------
+        float
+        '''
         return sum([edge.xy_projection_length for edge in self._edges])
 
     def _calculate_surface_area(self):
-        '''Formula gives signed area (sign depends on how the list of points
-        is traversed: clockwise or counter-clockwise), hence abs()'''
+        '''Calculates perimeter based on general formula (vertices coordinates).
+        The formula is valid for simple polygons.
+
+        Formula gives signed area (sign depends on how the list of points
+        is traversed: clockwise or counter-clockwise), hence abs()
+
+        Returns
+        -------
+        float
+        '''
         return abs(0.5*sum([
             prev_vertex.x*next_vertex.y - next_vertex.x*prev_vertex.y
             for prev_vertex, next_vertex in
@@ -436,11 +549,26 @@ class Polygon(object):
 
     @property
     def angles(self):
+        '''List of angles (in radians)
+
+        Returns
+        -------
+        list of floats
+        '''
         return self._angles
 
 
 class Polyhedron(object):
-    ''''''
+    '''3D object composed of two bases and faces.
+    This is not the most general case.
+
+    Attributes
+    ----------
+    surface_area : number
+        Self-explanatory
+    volume : number
+        Self-explanatory
+    '''
     def __init__(self, base, height):
         '''Creates a polyhedron with given base and height
 
@@ -450,6 +578,13 @@ class Polyhedron(object):
             Instance of `Polygon` class
         height : number
             Distance between two bases
+
+        Raises
+        ------
+        TypeError
+            If base is not an instance of `Polygon` class
+        ValueError
+            If height is not a number or is not greater than zero
         '''
         if not isinstance(base, Polygon):
             raise TypeError('Base must be an instance of `Polygon`')
@@ -467,15 +602,21 @@ class Polyhedron(object):
         return f'Polyhedron with {self._base} base'
 
     def _calculate_surface_area(self):
+        '''Surface area, just:
+        surf.area = 2 * area{base} + perimeter{base} * height
+        '''
         return 2*self._base.surface_area + self._base.perimeter*self._height
 
     def _calculate_volume(self):
+        '''Volume, just: volume = area{base} * height'''
         return self._base.surface_area * self._height
 
     @property
     def surface_area(self):
+        '''Access surface area of polyhedron'''
         return self._surface_area
 
     @property
     def volume(self):
+        '''Access volume of polyhedron'''
         return self._volume
